@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  StapleMemo:
+    Type: "Miltons::Red::Stapler"
+    Properties:
+      Memo: "I can't find my stapler"
+      SecondCopyOfMemo: "I believe you have my stapler"
+Outputs:
+  Printable:
+    Value: !GetAtt StapleMemo.PrintableMemo
