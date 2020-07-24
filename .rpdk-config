@@ -1,0 +1,11 @@
+{
+    "typeName": "Miltons::Red::Stapler",
+    "language": "python37",
+    "runtime": "python3.7",
+    "entrypoint": "miltons_red_stapler.handlers.resource",
+    "testEntrypoint": "miltons_red_stapler.handlers.test_entrypoint",
+    "settings": {
+        "use_docker": true,
+        "protocolVersion": "2.0.0"
+    }
+}
