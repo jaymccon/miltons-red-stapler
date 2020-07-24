@@ -32,13 +32,22 @@ def create_handler(
 ) -> ProgressEvent:
     model = request.desiredResourceState
     progress: ProgressEvent = ProgressEvent(
-        status=OperationStatus.IN_PROGRESS,
-        resourceModel=model,
+        status=OperationStatus.IN_PROGRESS, resourceModel=model,
     )
 
-    ssm_client = session.client('ssm')
-    model.TPSCode = ''.join([choice(ascii_lowercase) for _ in range(8)])
-    ssm_client.put_parameter(Name=model.TPSCode, Value=json.dumps([model.__dict__]), Type='String')
+    ssm_client = session.client("ssm")
+
+    # This runs the first time Cloudformation invokes the Create handler
+    if not model.TPSCode:
+        model.TPSCode = "".join([choice(ascii_lowercase) for _ in range(8)])
+        progress.callbackContext = {"phase": "GenerateTPSCode"}
+        progress.callbackDelaySeconds = 10
+        return progress
+
+    # Because we returned in progress, CFN will keep periodically executing this handler until we return SUCCESS
+    ssm_client.put_parameter(
+        Name=model.TPSCode, Value=json.dumps([model.__dict__]), Type="String"
+    )
     progress.status = OperationStatus.SUCCESS
     return progress
 
@@ -51,10 +60,9 @@ def delete_handler(
 ) -> ProgressEvent:
     model = request.desiredResourceState
     progress: ProgressEvent = ProgressEvent(
-        status=OperationStatus.IN_PROGRESS,
-        resourceModel=model,
+        status=OperationStatus.IN_PROGRESS, resourceModel=model,
     )
-    ssm_client = session.client('ssm')
+    ssm_client = session.client("ssm")
     ssm_client.delete_parameter(Name=model.TPSCode)
     progress.status = OperationStatus.SUCCESS
     return progress
@@ -67,13 +75,12 @@ def read_handler(
     callback_context: MutableMapping[str, Any],
 ) -> ProgressEvent:
     model = request.desiredResourceState
-    ssm_client = session.client('ssm')
+    ssm_client = session.client("ssm")
     response = ssm_client.get_parameter(Name=model.TPSCode)
-    model.PrintableMemo = f"This is an IniTech Memo coversheet, compliant with v1.9 standards and A4 printable on " \
-                          f"HPLaserJet printers. JSON encoded memo follows. \n\n" \
-                          f"--------------------------------------------------------------------------------------" \
-                          f"{response['Value']}"
-    return ProgressEvent(
-        status=OperationStatus.SUCCESS,
-        resourceModel=model,
+    model.PrintableMemo = (
+        f"This is an IniTech Memo coversheet, compliant with v1.9 standards and A4 printable on "
+        f"HPLaserJet printers. JSON encoded memo follows. \n\n"
+        f"--------------------------------------------------------------------------------------"
+        f"{response['Parameter']['Value']}"
     )
+    return ProgressEvent(status=OperationStatus.SUCCESS, resourceModel=model,)
